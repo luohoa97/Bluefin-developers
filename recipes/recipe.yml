@@ -2,12 +2,13 @@ name: bluefin-developers
 description: My personal development Bluefin image.
 base-image: ghcr.io/ublue-os/bluefin-dx
 image-version: latest
-
 modules:
   - type: dnf
+    repos:
+      - https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo
     install:
       packages:
         - waydroid
         - gh
-
+        - claude-desktop
   - type: signing
