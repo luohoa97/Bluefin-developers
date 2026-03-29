@@ -3,12 +3,8 @@ description: My personal development Bluefin image.
 base-image: ghcr.io/ublue-os/bluefin-dx
 image-version: latest
 modules:
-  - type: dnf
-    repos:
-      files:
-        - https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo
-    install:
-      - waydroid
-      - gh
-      - claude-desktop
+  - type: script
+    snippets:
+      - "curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo"
+      - "dnf install -y waydroid gh claude-desktop"
   - type: signing
