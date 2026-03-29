@@ -5,10 +5,10 @@ image-version: latest
 modules:
   - type: dnf
     repos:
-      - https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo
+      - name: claude-desktop
+        baseurl: https://aaddrick.github.io/claude-desktop-debian/rpm
     install:
-      packages:
-        - waydroid
-        - gh
-        - claude-desktop
+      - waydroid
+      - gh
+      - claude-desktop
   - type: signing
