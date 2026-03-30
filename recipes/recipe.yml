@@ -6,5 +6,5 @@ modules:
   - type: script
     snippets:
       - "curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo"
-      - "dnf install -y waydroid gh claude-desktop"
+      - "dnf install -y waydroid gh claude-desktop tor obfs4"
   - type: signing
