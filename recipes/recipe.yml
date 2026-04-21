@@ -1,7 +1,7 @@
 name: bluefin-developers
 description: My personal development Bluefin image.
 base-image: ghcr.io/ublue-os/bluefin-dx
-image-version: next
+image-version: beta
 modules:
   - type: script
     snippets:
