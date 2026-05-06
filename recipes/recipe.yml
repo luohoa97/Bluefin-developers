@@ -2,9 +2,15 @@ name: bluefin-developers
 description: My personal development Bluefin image.
 base-image: ghcr.io/ublue-os/bluefin-dx
 image-version: latest
+
 modules:
   - type: script
     snippets:
       - "curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo"
-      - "dnf install -y waydroid gh claude-desktop tor obfs4 earlyoom tailscale ripgrep nix sysstat wtype"
+      - "dnf install -y waydroid gh claude-desktop tor obfs4 earlyoom tailscale ripgrep nix sysstat wtype keyd ydotool wl-clipboard vulkan-loader playerctl"
+      - "ARCH=$(uname -m) && URL=$(curl -s https://api.github.com/repos/peteonrails/voxtype/releases/latest | grep -o \"https://[^\\\"]*linux-${ARCH}-vulkan\" | head -n 1) && curl -L \"$URL\" -o /usr/local/bin/voxtype && chmod +x /usr/local/bin/voxtype"
+      - "systemctl enable keyd.service"
+      - "systemctl enable ydotool.service || true"
+      - "cat > /etc/keyd/default.conf <<'EOF'\n[ids]\n*\n\n[main]\ncapslock = f24\nEOF"
+
   - type: signing
