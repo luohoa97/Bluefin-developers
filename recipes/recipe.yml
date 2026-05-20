@@ -8,7 +8,8 @@ modules:
     snippets:
       - "curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo"
       - "dnf copr enable -y alternateved/keyd"
-      - "dnf install -y waydroid gh claude-desktop tor obfs4 earlyoom tailscale ripgrep nix sysstat wtype keyd ydotool wl-clipboard vulkan-loader playerctl privoxy"
+      - "dnf copr enable scottames/ghostty"
+      - "dnf install -y waydroid gh claude-desktop tor obfs4 earlyoom tailscale ripgrep nix sysstat wtype keyd ydotool wl-clipboard vulkan-loader playerctl privoxy ghostty"
       - "systemctl enable keyd.service"
       - "systemctl enable ydotool.service || true"
   - type: signing
