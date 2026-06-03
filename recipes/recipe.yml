@@ -29,7 +29,6 @@ modules:
         playerctl
         privoxy
         mutter-devel
-        gnome-shell-devel
         gjs-devel
         meson
         ninja-build
