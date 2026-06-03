@@ -6,8 +6,8 @@ image-version: latest
 modules:
   - type: script
     snippets:
-      - "curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo"
-      - "dnf copr enable -y alternateved/keyd"
+      - curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo
+      - dnf copr enable -y alternateved/keyd
 
       - >
         dnf install -y
@@ -28,19 +28,16 @@ modules:
         vulkan-loader
         playerctl
         privoxy
-
         mutter-devel
-        mutter-devkit
         gnome-shell-devel
         gjs-devel
-
         meson
         ninja-build
         sysprof
         gtk4-devel
         libadwaita-devel
 
-      - "systemctl enable keyd.service"
-      - "systemctl enable ydotool.service || true"
+      - systemctl enable keyd.service
+      - systemctl enable ydotool.service || true
 
   - type: signing
