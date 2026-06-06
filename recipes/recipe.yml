@@ -11,6 +11,8 @@ modules:
 
       - >
         dnf install -y
+        node
+        npm
         waydroid
         gh
         claude-desktop
@@ -38,5 +40,6 @@ modules:
 
       - systemctl enable keyd.service
       - systemctl enable ydotool.service || true
+      - npx playwright install
 
   - type: signing
