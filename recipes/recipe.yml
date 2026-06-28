@@ -38,7 +38,7 @@ modules:
         sysprof
         gtk4-devel
         libadwaita-devel
-        # Already on fedora 44 duo_unix
+        duo_unix
 
       - systemctl enable keyd.service
       - systemctl enable ydotool.service || true
