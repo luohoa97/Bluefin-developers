@@ -38,6 +38,7 @@ modules:
         sysprof
         gtk4-devel
         libadwaita-devel
+        duo_unix
 
       - systemctl enable keyd.service
       - systemctl enable ydotool.service || true
