@@ -2,14 +2,12 @@ name: bluefin-developers
 description: My personal development Bluefin image.
 base-image: ghcr.io/ublue-os/bluefin-dx
 image-version: latest
-
 modules:
   - type: script
     snippets:
       - dnf install -y --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release terra-gpg-keys
       - curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo
       - dnf copr enable -y alternateved/keyd
-
       - >
         dnf install -y
         node
@@ -39,9 +37,21 @@ modules:
         gtk4-devel
         libadwaita-devel
         duo_unix
-
       - systemctl enable keyd.service
       - systemctl enable ydotool.service || true
       - npx playwright install
-
+  - type: script
+    snippets:
+      # BioPass: Windows Hello-style face/fingerprint auth via PAM
+      # Verify exact filename against: https://github.com/TickLabVN/biopass/releases/tag/1.3.0
+      - curl -fsSL -o /tmp/biopass.rpm https://github.com/TickLabVN/biopass/releases/download/1.3.0/biopass-1.3.0-1.x86_64.rpm
+      - rpm-ostree install /tmp/biopass.rpm || dnf install -y /tmp/biopass.rpm
+      - rm -f /tmp/biopass.rpm
+  - type: files
+    files:
+      - usr: usr
+  - type: systemd
+    system:
+      enabled:
+        - biopass-authselect-apply.service
   - type: signing
