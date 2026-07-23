@@ -38,6 +38,7 @@ modules:
         libadwaita-devel
         duo_unix
         gstreamer1-plugin-gtk4
+        hcitool
       - systemctl enable keyd.service
       - systemctl enable ydotool.service || true
       - npx playwright install
