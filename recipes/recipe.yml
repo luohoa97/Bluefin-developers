@@ -41,9 +41,16 @@ modules:
   - type: dnf
     install:
       packages:
-        # --- Proton VPN (beta channel) ---
-        - proton-vpn-cli
-        - proton-vpn-linux # NM protun plugin -> enables Stealth
+        # --- Proton VPN dependencies ---
+        # Installed here, with scriptlets running normally, so that the
+        # noscripts transaction further down contains ONLY Proton
+        # packages. Verified as the complete set of non-Proton deps that
+        # bluefin-dx does not already carry.
+        - python3-dbus-fast
+        - python3-tabulate
+        - python3-jinja2
+        - python3-pynacl
+        - python3-sentry-sdk
 
         # --- Node.js ---
         # Fedora 44 has NO unversioned node/nodejs/npm package; only
@@ -91,10 +98,35 @@ modules:
         - claude-desktop
 
   # ------------------------------------------------------------------
+  # Proton VPN stack, installed with scriptlets disabled.
+  #
+  # proton-vpn-daemon's %posttrans runs:
+  #     systemctl daemon-reload
+  #     systemctl enable  me.proton.vpn.split_tunneling.service
+  #     systemctl start   me.proton.vpn.split_tunneling.service
+  #
+  # `systemctl start` cannot work during an image build - there is no
+  # system D-Bus - so it exits 1 and libdnf5 fails the whole
+  # transaction ("Failed to connect to system scope bus ... Host is
+  # down"). tsflags=noscripts skips it; the unit is instead enabled
+  # declaratively in the systemd module below, and it starts at boot.
+  #
+  # Scoped to a separate transaction on purpose: every non-Proton
+  # dependency is installed above, so nothing else loses its scriptlets.
+  # The only other Proton scriptlets are `killall nm-protun-service
+  # || true` guards, which are no-ops in a build.
+  # ------------------------------------------------------------------
+  - type: script
+    snippets:
+      - dnf install -y --setopt=tsflags=noscripts proton-vpn-cli proton-vpn-linux
+
+  # ------------------------------------------------------------------
   # Services. Verified unit names: keyd.service, ydotool.service,
   # earlyoom.service, tor.service all exist in their packages.
   # tor.service is enabled so the SOCKS proxy on 127.0.0.1:9050 is
   # available after every boot without manual intervention.
+  # me.proton.vpn.split_tunneling.service replaces the enable that the
+  # skipped %posttrans scriptlet would have performed.
   # ------------------------------------------------------------------
   - type: systemd
     system:
@@ -103,6 +135,7 @@ modules:
         - ydotool.service
         - earlyoom.service
         - tor.service
+        - me.proton.vpn.split_tunneling.service
 
   # ------------------------------------------------------------------
   # Playwright browsers, installed image-wide instead of into root's
