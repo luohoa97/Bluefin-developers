@@ -2,47 +2,118 @@ name: bluefin-developers
 description: My personal development Bluefin image.
 base-image: ghcr.io/ublue-os/bluefin-dx
 image-version: latest
+
 modules:
+  # ------------------------------------------------------------------
+  # Third-party repos.
+  # Terra was removed: nothing in the package list below comes from it,
+  # and it was the flaky step (primary.xml.zck curl timeout + unsigned
+  # repo metadata) that broke the 2026-07-27 build.
+  # ------------------------------------------------------------------
+  - type: dnf
+    repos:
+      copr:
+        - alternateved/keyd
+      files:
+        - https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo
+
+  # ------------------------------------------------------------------
+  # Proton VPN: BETA channel.
+  #
+  # protonvpn-beta-release configures [protonvpn-fedora-unstable], which
+  # is the only channel shipping proton-vpn-linux. That package provides
+  # /usr/lib/NetworkManager/VPN/nm-protun.name plus the native
+  # proton/vpn/linux.abi3.so, i.e. the "protun" backend that the Proton
+  # stack exposes as the Stealth protocol. Stable ships neither.
+  #
+  # The beta-release RPM itself lives under the -stable/ tree.
+  # Proton's signing key is imported first so this stays gpgcheck-clean.
+  # ------------------------------------------------------------------
   - type: script
     snippets:
-      - dnf install -y --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' terra-release terra-gpg-keys
-      - curl -fsSL https://aaddrick.github.io/claude-desktop-debian/rpm/claude-desktop.repo -o /etc/yum.repos.d/claude-desktop.repo
-      - dnf copr enable -y alternateved/keyd
-      - wget "https://repo.protonvpn.com/fedora-$(cat /etc/fedora-release | cut -d' ' -f 3)-stable/protonvpn-stable-release/protonvpn-stable-release-1.0.4-1.noarch.rpm"
-      - sudo dnf install -y ./protonvpn-stable-release-1.0.4-1.noarch.rpm && sudo dnf check-update --refresh 
-      - sudo dnf install -y proton-vpn-cli
-      - >
-        dnf install -y
-        node
-        npm
-        waydroid
-        gh
-        claude-desktop
-        tor
-        obfs4
-        earlyoom
-        tailscale
-        ripgrep
-        nix
-        sysstat
-        wtype
-        keyd
-        ydotool
-        wl-clipboard
-        vulkan-loader
-        playerctl
-        privoxy
-        mutter-devel
-        gjs-devel
-        meson
-        ninja-build
-        sysprof
-        gtk4-devel
-        libadwaita-devel
-        duo_unix
-        gstreamer1-plugin-gtk4
-        hcitool
-      - systemctl enable keyd.service
-      - systemctl enable ydotool.service || true
-      - npx playwright install
+      - curl -fsSL "https://repo.protonvpn.com/fedora-$(rpm -E %fedora)-stable/public_key.asc" -o /tmp/protonvpn.asc
+      - rpm --import /tmp/protonvpn.asc
+      - dnf install -y "https://repo.protonvpn.com/fedora-$(rpm -E %fedora)-stable/protonvpn-beta-release/protonvpn-beta-release-1.0.4-1.noarch.rpm"
+
+  # ------------------------------------------------------------------
+  # Packages
+  # ------------------------------------------------------------------
+  - type: dnf
+    install:
+      packages:
+        # --- Proton VPN (beta channel) ---
+        - proton-vpn-cli
+        - proton-vpn-linux # NM protun plugin -> enables Stealth
+
+        # --- Node.js ---
+        # Fedora 44 has NO unversioned node/nodejs/npm package; only
+        # nodejs20/22/24 + nodejsNN-npm. "node" resolved to nothing.
+        - nodejs24
+        - nodejs24-npm
+
+        # --- Circumvention / networking ---
+        - tor
+        - obfs4
+        - privoxy
+        - tailscale
+
+        # --- Dev tooling ---
+        - gh
+        - ripgrep
+        - meson
+        - ninja-build
+        - sysprof
+        - nix
+
+        # --- GNOME / GTK development headers ---
+        - mutter-devel
+        - gjs-devel
+        - gtk4-devel
+        - libadwaita-devel
+        - gstreamer1-plugin-gtk4
+
+        # --- Desktop / input / media ---
+        - wtype
+        - ydotool
+        - keyd
+        - wl-clipboard
+        - playerctl
+        - vulkan-loader
+
+        # --- System ---
+        - earlyoom
+        - sysstat
+        - waydroid
+        - duo_unix
+        - bluez-deprecated # provides /usr/bin/hcitool ("hcitool" is not a package)
+
+        # --- Apps ---
+        - claude-desktop
+
+  # ------------------------------------------------------------------
+  # Services. Verified unit names: keyd.service, ydotool.service,
+  # earlyoom.service, tor.service all exist in their packages.
+  # tor.service is enabled so the SOCKS proxy on 127.0.0.1:9050 is
+  # available after every boot without manual intervention.
+  # ------------------------------------------------------------------
+  - type: systemd
+    system:
+      enabled:
+        - keyd.service
+        - ydotool.service
+        - earlyoom.service
+        - tor.service
+
+  # ------------------------------------------------------------------
+  # Playwright browsers, installed image-wide instead of into root's
+  # ~/.cache (where the old "npx playwright install" put them, making
+  # them invisible to your user account at runtime).
+  # ------------------------------------------------------------------
+  - type: script
+    snippets:
+      - mkdir -p /usr/lib/playwright /etc/environment.d
+      - printf 'PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright\n' > /etc/environment.d/60-playwright.conf
+      - printf 'export PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright\n' > /etc/profile.d/playwright.sh
+      - PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright npx --yes playwright install chromium
+
   - type: signing
