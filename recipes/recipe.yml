@@ -149,4 +149,49 @@ modules:
       - printf 'export PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright\n' > /etc/profile.d/playwright.sh
       - PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright npx --yes playwright install chromium
 
+  # ------------------------------------------------------------------
+  # pvpn - Proton VPN wrapper for filtered networks.
+  # https://github.com/luohoa97/protun-unblocked
+  #
+  # Baked in so it survives reboots and image rebases. Losing it on every
+  # reboot is exactly what made this painful before: packages installed
+  # into a `rpm-ostree usroverlay` are transient.
+  #
+  # Pinned to a commit, not a branch, so an image rebuild cannot silently
+  # change what ships. Bump PVPN_REF to take new work.
+  #
+  # The GUI is deliberately NOT built here: it would pull cargo and the
+  # gtk4/libadwaita crates into every image build for something most users
+  # will not open. `ujust pvpn-gui-install` builds it on demand instead.
+  # ------------------------------------------------------------------
+  - type: script
+    snippets:
+      - |
+        set -euo pipefail
+        PVPN_REF=f733e55
+        tmp=$(mktemp -d)
+        curl -fsSL "https://github.com/luohoa97/protun-unblocked/archive/${PVPN_REF}.tar.gz" \
+          | tar -xz -C "$tmp" --strip-components=1
+
+        install -Dm755 "$tmp/bin/pvpn"             /usr/bin/pvpn
+        install -Dm755 "$tmp/bin/vpn-check"        /usr/bin/vpn-check
+        install -Dm644 "$tmp/lib/sitecustomize.py" /usr/share/pvpn/sitecustomize.py
+        install -Dm644 "$tmp/lib/aiodns.py"        /usr/share/pvpn/aiodns.py
+        install -Dm755 "$tmp/lib/pvpn-scan.py"     /usr/share/pvpn/pvpn-scan.py
+        install -Dm755 "$tmp/lib/signin-bridge.py" /usr/share/pvpn/signin-bridge.py
+
+        # 00-entry.just does `import? ".../60-custom.just"`, and that single
+        # file is the whole extension point - so APPEND rather than
+        # overwrite, or we would silently drop anyone else's recipes.
+        install -d /usr/share/ublue-os/just
+        JUST=/usr/share/ublue-os/just/60-custom.just
+        if [ -f "$JUST" ] && grep -q 'pvpn-login' "$JUST"; then
+          echo "pvpn recipes already present in 60-custom.just"
+        else
+          cat "$tmp/dist/60-pvpn.just" >> "$JUST"
+        fi
+
+        rm -rf "$tmp"
+        pvpn help >/dev/null && echo "pvpn installed to /usr/bin"
+
   - type: signing
