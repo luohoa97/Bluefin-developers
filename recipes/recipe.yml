@@ -168,7 +168,7 @@ modules:
     snippets:
       - |
         set -euo pipefail
-        PVPN_REF=f733e55
+        PVPN_REF=3da0534
         tmp=$(mktemp -d)
         curl -fsSL "https://github.com/luohoa97/protun-unblocked/archive/${PVPN_REF}.tar.gz" \
           | tar -xz -C "$tmp" --strip-components=1
@@ -179,6 +179,16 @@ modules:
         install -Dm644 "$tmp/lib/aiodns.py"        /usr/share/pvpn/aiodns.py
         install -Dm755 "$tmp/lib/pvpn-scan.py"     /usr/share/pvpn/pvpn-scan.py
         install -Dm755 "$tmp/lib/signin-bridge.py" /usr/share/pvpn/signin-bridge.py
+        install -Dm755 "$tmp/dist/pvpn-resume"     /usr/share/pvpn/pvpn-resume
+
+        # Repair the tunnel after suspend. protun's own reconnect probes
+        # with a WireGuard UDP handshake, which a UDP-blocking network never
+        # answers - so it retries forever while NetworkManager still shows
+        # proton0 activated and the CLI still says Connected. The hook only
+        # acts when traffic has actually stopped, so a tunnel that survived
+        # resume is left alone.
+        install -Dm755 "$tmp/dist/pvpn-resume" \
+          /usr/lib/systemd/system-sleep/pvpn-resume
 
         # 00-entry.just does `import? ".../60-custom.just"`, and that single
         # file is the whole extension point - so APPEND rather than
