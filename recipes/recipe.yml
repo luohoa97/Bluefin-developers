@@ -168,7 +168,7 @@ modules:
     snippets:
       - |
         set -euo pipefail
-        PVPN_REF=3da0534
+        PVPN_REF=1a6a1aa
         tmp=$(mktemp -d)
         curl -fsSL "https://github.com/luohoa97/protun-unblocked/archive/${PVPN_REF}.tar.gz" \
           | tar -xz -C "$tmp" --strip-components=1
@@ -176,7 +176,6 @@ modules:
         install -Dm755 "$tmp/bin/pvpn"             /usr/bin/pvpn
         install -Dm755 "$tmp/bin/vpn-check"        /usr/bin/vpn-check
         install -Dm644 "$tmp/lib/sitecustomize.py" /usr/share/pvpn/sitecustomize.py
-        install -Dm644 "$tmp/lib/aiodns.py"        /usr/share/pvpn/aiodns.py
         install -Dm755 "$tmp/lib/pvpn-scan.py"     /usr/share/pvpn/pvpn-scan.py
         install -Dm755 "$tmp/lib/signin-bridge.py" /usr/share/pvpn/signin-bridge.py
         install -Dm755 "$tmp/dist/pvpn-resume"     /usr/share/pvpn/pvpn-resume
