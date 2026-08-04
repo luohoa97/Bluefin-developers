@@ -168,7 +168,7 @@ modules:
     snippets:
       - |
         set -euo pipefail
-        PVPN_REF=1a6a1aa
+        PVPN_REF=2a7fec7
         tmp=$(mktemp -d)
         curl -fsSL "https://github.com/luohoa97/protun-unblocked/archive/${PVPN_REF}.tar.gz" \
           | tar -xz -C "$tmp" --strip-components=1
