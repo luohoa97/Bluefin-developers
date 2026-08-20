@@ -128,13 +128,11 @@ modules:
   # me.proton.vpn.split_tunneling.service replaces the enable that the
   # skipped %posttrans scriptlet would have performed.
   # ------------------------------------------------------------------
+  # NB: pvpnd.service is NOT enabled here. This module runs BEFORE the pvpn
+  # script module that installs the unit, so `systemctl enable` failed with
+  # "Unit pvpnd.service does not exist" and took the whole build with it.
+  # It is enabled inside that script instead, right after the file lands.
   - type: systemd
-    user:
-      enabled:
-        # pvpnd runs as YOU: Proton keeps per-user state (keyring,
-        # settings.json) that root cannot see. It idles until `pvpn up`
-        # records intent, so enabling it by default costs nothing.
-        - pvpnd.service
     system:
       enabled:
         - keyd.service
@@ -199,6 +197,11 @@ modules:
         install -Dm755 "$tmp/daemon/target/release/pvpnd" /usr/bin/pvpnd
         install -Dm644 "$tmp/dist/pvpnd.service" \
             /usr/lib/systemd/user/pvpnd.service
+        # --global enables a USER unit for every user, which is what this
+        # needs: pvpnd must run as you, not root. Done here rather than in
+        # the systemd module because that module runs earlier, before this
+        # file exists.
+        systemctl --global enable pvpnd.service
         # Non-fatal: worst case the image carries cargo, which is bloat but
         # not breakage.
         dnf remove -y cargo rust || true
