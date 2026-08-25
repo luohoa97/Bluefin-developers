@@ -172,29 +172,34 @@ modules:
     snippets:
       - |
         set -euo pipefail
-        PVPN_REF=7dae49a
+        PVPN_REF=3f8deaf
         tmp=$(mktemp -d)
         curl -fsSL "https://github.com/luohoa97/protun-unblocked/archive/${PVPN_REF}.tar.gz" \
           | tar -xz -C "$tmp" --strip-components=1
 
-        install -Dm755 "$tmp/bin/pvpn"             /usr/bin/pvpn
         install -Dm755 "$tmp/bin/vpn-check"        /usr/bin/vpn-check
         install -Dm644 "$tmp/lib/sitecustomize.py" /usr/share/pvpn/sitecustomize.py
         install -Dm755 "$tmp/lib/pvpn-scan.py"     /usr/share/pvpn/pvpn-scan.py
         install -Dm755 "$tmp/lib/signin-bridge.py" /usr/share/pvpn/signin-bridge.py
         install -Dm755 "$tmp/dist/pvpn-resume"     /usr/share/pvpn/pvpn-resume
 
-        # pvpnd: keeps the tunnel alive and repairs it when it dies.
+        # pvpn + pvpnd, from the cargo workspace.
         #
-        # Built here rather than shipped as a ujust step, because it has
-        # ZERO dependencies and compiles in about a second - the only cost
-        # is fetching the toolchain, which is then removed again so it does
-        # not bloat the image. (The GUI is NOT built this way: it drags in
-        # the gtk4/libadwaita crates, which is a different order of cost.)
+        # The tree moved to crates/ - `daemon/` no longer exists, and this
+        # step silently built nothing until it was updated. Both binaries
+        # are built in one pass; -p keeps the GUI out, which is excluded
+        # from the workspace anyway because gtk4 is a different order of
+        # build cost. The toolchain is removed again below.
         dnf install -y cargo
-        (cd "$tmp/daemon" && cargo build --release --offline 2>/dev/null \
-            || cargo build --release)
-        install -Dm755 "$tmp/daemon/target/release/pvpnd" /usr/bin/pvpnd
+        (cd "$tmp" && cargo build --release -p pvpn -p pvpnd --offline 2>/dev/null \
+            || cargo build --release -p pvpn -p pvpnd)
+        # The Rust CLI is the front door; the bash implementation is kept
+        # as pvpn-legacy for the commands not yet ported, and pvpn delegates
+        # to it. It must NOT be installed as `pvpn`, or the Rust binary
+        # would find itself and recurse.
+        install -Dm755 "$tmp/target/release/pvpn"  /usr/bin/pvpn
+        install -Dm755 "$tmp/bin/pvpn"             /usr/libexec/pvpn-legacy
+        install -Dm755 "$tmp/target/release/pvpnd" /usr/bin/pvpnd
         install -Dm644 "$tmp/dist/pvpnd.service" \
             /usr/lib/systemd/user/pvpnd.service
         # --global enables a USER unit for every user, which is what this
