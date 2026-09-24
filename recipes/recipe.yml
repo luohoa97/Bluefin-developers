@@ -232,6 +232,6 @@ modules:
         fi
 
         rm -rf "$tmp"
-        pvpn help >/dev/null && echo "pvpn installed to /usr/bin"
+        pvpn --help >/dev/null && echo "pvpn installed to /usr/bin"
 
   - type: signing
