@@ -234,4 +234,30 @@ modules:
         rm -rf "$tmp"
         pvpn --help >/dev/null && echo "pvpn installed to /usr/bin"
 
+  # ------------------------------------------------------------------
+  # composefs backend support.
+  #
+  # bootc's composefs backend mounts the root from the initramfs via
+  # bootc-root-setup.service, which lives in the 51bootc dracut module.
+  # That module never includes itself (its check() returns 255), so the
+  # stock bluefin initramfs cannot boot a composefs deployment. Opt in and
+  # regenerate. The unit is gated on the `composefs` karg, so the ostree
+  # backend keeps booting this image unchanged.
+  #
+  # Kept last among the modules so that the initramfs is built against
+  # the final package set.
+  # ------------------------------------------------------------------
+  - type: script
+    snippets:
+      - |
+        set -euo pipefail
+        printf 'add_dracutmodules+=" bootc "\n' \
+          > /usr/lib/dracut/dracut.conf.d/60-bootc-composefs.conf
+        kvers=(/usr/lib/modules/*)
+        [ "${#kvers[@]}" -eq 1 ] || { echo "expected one kernel, found: ${kvers[*]}" >&2; exit 1; }
+        kver=$(basename "${kvers[0]}")
+        dracut --force --no-hostonly --reproducible --kver "$kver" \
+          "/usr/lib/modules/$kver/initramfs.img"
+        lsinitrd "/usr/lib/modules/$kver/initramfs.img" | grep -q bootc-root-setup.service
+
   - type: signing
