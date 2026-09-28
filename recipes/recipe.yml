@@ -256,8 +256,13 @@ modules:
         kvers=(/usr/lib/modules/*)
         [ "${#kvers[@]}" -eq 1 ] || { echo "expected one kernel, found: ${kvers[*]}" >&2; exit 1; }
         kver=$(basename "${kvers[0]}")
+        # dracut refuses to run without /var/tmp, which bootc images ship empty.
+        mkdir -p /var/tmp
         dracut --force --no-hostonly --reproducible --kver "$kver" \
           "/usr/lib/modules/$kver/initramfs.img"
-        lsinitrd "/usr/lib/modules/$kver/initramfs.img" | grep -q bootc-root-setup.service
+        # Not `grep -q`: it exits on the first match, lsinitrd dies of
+        # SIGPIPE, and pipefail turns that into a failed build.
+        lsinitrd "/usr/lib/modules/$kver/initramfs.img" \
+          | grep bootc-root-setup.service >/dev/null
 
   - type: signing
