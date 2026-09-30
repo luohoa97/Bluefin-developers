@@ -121,6 +121,25 @@ modules:
       - dnf install -y --setopt=tsflags=noscripts proton-vpn-cli proton-vpn-linux
 
   # ------------------------------------------------------------------
+  # Memory stack: files/system is copied over / here.
+  #
+  #   zram-generator.conf.d/60-tiered.conf  lz4 primary, zstd recompression
+  #   zram-recompress.{service,timer}       recompresses idle pages every
+  #                                         30 min (zram has no in-kernel
+  #                                         trigger; enabled below)
+  #   tmpfiles.d/damon-reclaim.conf         DAMON_RECLAIM: proactive
+  #                                         reclaim of cold pages into zram
+  #   sysctl.d/99-proactive-reclaim.conf    earlier kswapd wakeup
+  #
+  # All of it runs on the stock Fedora kernel. Must stay before the
+  # systemd module, which enables zram-recompress.timer.
+  # ------------------------------------------------------------------
+  - type: files
+    files:
+      - source: system
+        destination: /
+
+  # ------------------------------------------------------------------
   # Services. Verified unit names: keyd.service, ydotool.service,
   # earlyoom.service, tor.service all exist in their packages.
   # tor.service is enabled so the SOCKS proxy on 127.0.0.1:9050 is
@@ -140,6 +159,7 @@ modules:
         - earlyoom.service
         - tor.service
         - me.proton.vpn.split_tunneling.service
+        - zram-recompress.timer
 
   # ------------------------------------------------------------------
   # Playwright browsers, installed image-wide instead of into root's
